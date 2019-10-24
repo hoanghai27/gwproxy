@@ -22,38 +22,38 @@ pip install https://gitlab.com/hoanghai27/gwproxy.git
 ## Usage
 Define your own session handler class:
 ```python
-from gwproxy.tcp import TcpSession
+from gwproxy.tcp import TcpProxyThread, TcpProxyCallback
 
 
-class SessionHandler(TcpSession):
-    def __init__(self, client_sock, server_ip, server_port):
-        TcpSession.__init__(self, client_sock, server_ip, server_port)
-        print("New session %s:%d" %(server_ip, server_port))
+class MyCallback(TcpProxyCallback):
 
-    def on_client_send(self, sock, data):
+    def on_server_connected(self, session: TcpProxyThread):
+        print("[+] Connected to {}:{} -> {}".format(session.server_host, session.server_port, session.server_sock))
+
+    def on_client_send(self, session: TcpProxyThread, data):
         print('>>> %s' % data.hex())
+        # session.send_to_server(data)
 
-    def on_server_send(self, sock, data):
+    def on_server_send(self, session: TcpProxyThread, data):
         print('<<< %s' % data.hex())
+        # session.send_to_client(data)
 
-    def on_client_close(self, sock):
-        super().on_client_close(sock)
-        print("[x] Client closed %s" % sock)
+    def on_client_close(self, session: TcpProxyThread):
+        print("[x] Client closed")
 
-    def on_server_close(self, sock):
-        super().on_server_close(sock)
-        print("[x] Server closed %s" % sock)
+    def on_server_close(self, session: TcpProxyThread):
+        print("[x] Server closed")
 ```
 
-Start gateway proxy with that handler:
+Start gateway proxy with that callback object:
 ```python
 from gwproxy.proxy import TcpGwProxy
 
 
 proxy = TcpGwProxy('0.0.0.0', 5555, auto_fw=True)
-proxy.start(SessionHandler)
+proxy.start(MyCallback())
 ```
 
-In case of you want to modify tcp data, just set `auto_fw=False` and send it yourself on `on_client_send()` or `on_server_send()`.
+In case of you want to modify tcp data, just set `auto_fw=False` and send it yourself on `on_client_send()` or `on_server_send()` by using `session.send_to_client(data)` or `session.send_to_server(data)`.
 
 Good luck!
