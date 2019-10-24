@@ -1,5 +1,4 @@
 import socket
-from threading import Thread
 
 from gwproxy.tcp import TcpProxyThread
 from gwproxy.util import get_dst_address
@@ -10,7 +9,7 @@ class TcpGwProxy:
         self.host = host
         self.port = port
         self.auto_fw = auto_fw
-        self.proxy_threads = []
+        self.sessions = []
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -24,15 +23,13 @@ class TcpGwProxy:
             client, address = self.sock.accept()
             self._on_accept(client, address, session_cls)
 
-    def _on_accept(self, sock, address, session_cls):
+    def _on_accept(self, sock, address, callback_obj):
         sock.settimeout(60)
         ip, port = get_dst_address(sock)
         print('- New connection: %s:%s -> %s:%s' % (address[0], address[1], ip, port))
-        session = session_cls(sock, ip, port)
-        proxy_thread = TcpProxyThread(sock, ip, port, session, self.auto_fw)
-        # proxy_thread.set_on_connect_to_callback(lambda ip, port, game_bot: self.register_session(ip, port, game_bot))
+        proxy_thread = TcpProxyThread(sock, ip, port, callback_obj, self.auto_fw)
         proxy_thread.start()
-        self.proxy_threads.append(proxy_thread)
+        self.sessions.append(proxy_thread)
 
     def stop(self):
         print("TLS proxy is exiting ...")
