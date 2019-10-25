@@ -59,7 +59,7 @@ class TcpTrafficHandler(Thread):
 class TcpProxyThread(Thread):
     def __init__(self, client_sock, server_host, server_port, callback_cls, auto_fw=False, buff_size=1024):
         Thread.__init__(self)
-        self.callback_obj = callback_cls()
+        self.callback_obj = callback_cls(self)
         self.auto_fw = auto_fw
         self.buff_size = buff_size
 
@@ -96,7 +96,7 @@ class TcpProxyThread(Thread):
 
     def run(self):
         self._connect_to_server()
-        self.callback_obj.on_server_connected(self)
+        self.callback_obj.on_server_connected()
         self.sock_list = [self.client_sock, self.server_sock]
         while self.client.is_alive() and self.server.is_alive():
             self._handle_in_queue(self.client_sock, self.client.in_queue)
@@ -113,36 +113,36 @@ class TcpProxyThread(Thread):
         while not queue.empty() and i < limit:
             data = queue.get()
             if sock == self.client_sock:
-                self.callback_obj.on_client_send(self, data)
+                self.callback_obj.on_client_send(data)
                 if self.auto_fw:
                     self.server_sock.send(data)
             else:
-                self.callback_obj.on_server_send(self, data)
+                self.callback_obj.on_server_send(data)
                 if self.auto_fw:
                     self.client_sock.send(data)
             i += 1
 
     def _on_socket_close(self, sock):
         if sock == self.client_sock:
-            self.callback_obj.on_client_close(self)
+            self.callback_obj.on_client_close()
 
         else:
-            self.callback_obj.on_server_close(self)
+            self.callback_obj.on_server_close()
         self.disconnect()
 
 
 class TcpProxyCallback:
-    def on_server_connected(self, session: TcpProxyThread):
+    def on_server_connected(self,):
         raise RuntimeError("Unimplemented TcpProxyThread.on_server_connected")
 
-    def on_client_send(self, session: TcpProxyThread, data: bytes):
+    def on_client_send(self, data: bytes):
         raise RuntimeError("Unimplemented TcpProxyThread.on_client_send")
 
-    def on_server_send(self, session: TcpProxyThread, data: bytes):
+    def on_server_send(self, data: bytes):
         raise RuntimeError("Unimplemented TcpProxyThread.on_server_send")
 
-    def on_client_close(self, session: TcpProxyThread):
+    def on_client_close(self):
         raise RuntimeError("Unimplemented TcpProxyThread.on_client_close")
 
-    def on_server_close(self, session: TcpProxyThread):
+    def on_server_close(self):
         raise RuntimeError("Unimplemented TcpProxyThread.on_server_close")
