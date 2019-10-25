@@ -1,3 +1,4 @@
+import time
 from socket import socket, create_connection, timeout
 import threading
 from queue import Queue
@@ -20,6 +21,7 @@ class TcpTrafficHandler(Thread):
         while not self.stopped():
             self.do_send()
             self.do_recv()
+            time.sleep(0.05)
 
         self._in_sock.close()
         self._out_sock.close()
@@ -31,6 +33,7 @@ class TcpTrafficHandler(Thread):
                 self._out_sock.send(data)
             except (ConnectionError, OSError):
                 return
+            self.out_queue.task_done()
 
     def do_recv(self):
         data = None
@@ -99,8 +102,9 @@ class TcpProxyThread(Thread):
         self.callback_obj.on_server_connected()
         self.sock_list = [self.client_sock, self.server_sock]
         while self.client.is_alive() and self.server.is_alive():
-            self._handle_in_queue(self.client_sock, self.client.in_queue)
-            self._handle_in_queue(self.server_sock, self.server.in_queue)
+            self._handle_in_queue(self.client_sock, self.client.in_queue, limit=3)
+            self._handle_in_queue(self.server_sock, self.server.in_queue, limit=3)
+            time.sleep(0.05)
 
         if self.client.is_alive():
             self._on_socket_close(self.client_sock)
@@ -121,6 +125,7 @@ class TcpProxyThread(Thread):
                 if self.auto_fw:
                     self.client_sock.send(data)
             i += 1
+            queue.task_done()
 
     def _on_socket_close(self, sock):
         if sock == self.client_sock:
