@@ -51,7 +51,7 @@ from gwproxy.proxy import TcpGwProxy
 
 
 proxy = TcpGwProxy('0.0.0.0', 5555, auto_fw=True)
-proxy.start(MyCallback())
+proxy.start(MyCallback)
 ```
 
 In case of you want to modify tcp data, just set `auto_fw=False` and send it yourself on `on_client_send()` or `on_server_send()` by using `session.send_to_client(data)` or `session.send_to_server(data)`.

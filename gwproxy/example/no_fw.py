@@ -23,4 +23,4 @@ class NoFwCallback(TcpProxyCallback):
 
 if __name__ == '__main__':
     proxy = TcpGwProxy('0.0.0.0', 7777)
-    proxy.start(NoFwCallback())
+    proxy.start(NoFwCallback)

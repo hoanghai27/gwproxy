@@ -57,9 +57,9 @@ class TcpTrafficHandler(Thread):
 
 
 class TcpProxyThread(Thread):
-    def __init__(self, client_sock, server_host, server_port, callback_obj, auto_fw=False, buff_size=1024):
+    def __init__(self, client_sock, server_host, server_port, callback_cls, auto_fw=False, buff_size=1024):
         Thread.__init__(self)
-        self.callback_obj = callback_obj
+        self.callback_obj = callback_cls()
         self.auto_fw = auto_fw
         self.buff_size = buff_size
 
