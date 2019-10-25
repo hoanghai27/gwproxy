@@ -19,21 +19,23 @@ class TcpTrafficHandler(Thread):
     def run(self) -> None:
         self._in_sock.settimeout(0.1)
         while not self.stopped():
-            self.do_send()
+            self.do_send(limit=3)
             self.do_recv()
             time.sleep(0.05)
 
         self._in_sock.close()
         self._out_sock.close()
 
-    def do_send(self):
-        while not self.out_queue.empty():
+    def do_send(self, limit=10):
+        i = 0
+        while not self.out_queue.empty() and i < limit:
             data = self.out_queue.get()
             try:
                 self._out_sock.send(data)
             except (ConnectionError, OSError):
                 return
             self.out_queue.task_done()
+            i += 1
 
     def do_recv(self):
         data = None
